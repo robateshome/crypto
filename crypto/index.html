@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crypto Wallet Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 2rem;
+      background-color: #1f1f1f;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 1rem 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 12px 20px;
+      background-color: #00c896;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #00a376;
+    }
+    .wallet-info {
+      margin-top: 2rem;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Crypto Wallet Tracker</h1>
+    <form id="walletForm">
+      <input type="text" id="walletAddress" placeholder="Enter Solana Wallet Address" />
+      <button type="submit">Track Wallet</button>
+    </form>
+    <div id="result" class="wallet-info"></div>
+  </div>
+  <script>
+    document.getElementById("walletForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      fetchWalletData();
+    });
+    async function fetchWalletData() {
+      const address = document.getElementById("walletAddress").value.trim();
+      const resultDiv = document.getElementById("result");
+      if (!address) {
+        resultDiv.innerHTML = "<p>Please enter a wallet address.</p>";
+        return;
+      }
+      resultDiv.innerHTML = "<p>Loading...</p>";
+      try {
+        const response = await fetch(`/api/wallet/${encodeURIComponent(address)}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch data from server.");
+        }
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid address or network error.");
+        }
+        let html = `<h2>Wallet: ${address}</h2><ul>`;
+        for (const token of data) {
+          const symbol = typeof token.tokenSymbol === 'string' && token.tokenSymbol.trim()
+            ? token.tokenSymbol
+            : (typeof token.tokenName === 'string' && token.tokenName.trim()
+              ? token.tokenName
+              : "Unknown");
+          const balance = (token.tokenAmount && typeof token.tokenAmount.uiAmount === 'number')
+            ? token.tokenAmount.uiAmount.toFixed(4)
+            : "0.0000";
+          html += `<li><strong>${symbol}:</strong> ${balance}</li>`;
+        }
+        html += "</ul>";
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
